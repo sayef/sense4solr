@@ -1,0 +1,55 @@
+<html xmlns="http://www.w3.org/1999/html" lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=windows-1252">
+  <title>Marvel - Sense</title>
+  <link id="bootstrapThemeCss" href="assets/bootstrap.css" type="text/css" rel="stylesheet">
+  <link href="assets/font-awesome.css" type="text/css" rel="stylesheet">
+  <link id="senseThemeCss" href="assets/sense.css" rel="stylesheet" type="text/css">
+  <link href="assets/sense_002.css" rel="stylesheet" type="text/css">
+
+
+ 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.0/ace.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.js"></script>
+  <script type="text/javascript">
+  	$(document).ready(function(){
+	  	  var editor = ace.edit("editor");
+			editor.setTheme("ace/theme/monokai");
+			editor.getSession().setMode("ace/mode/javascript");
+			var Range = require("ace/range").Range, markerId
+			var handler = function(e){
+			    var editor = e.editor
+			    var pos = editor.getCursorPosition()
+			    var token = editor.session.getTokenAt(pos.row, pos.column)
+			    var line = editor.session.getLine(pos.row)   
+			}
+			editor.on("click", handler)
+
+	});
+  </script>
+  </head>
+<body class="">
+<div class="navbar navbar-static-top">
+  <div class="navbar-inner">
+    <div class="container-fluid">
+      <span class="brand" id="server_label">Server</span>
+
+      <form class="navbar-form pull-left">
+        <input id="es_server" class="span5 ui-autocomplete-input" value="localhost:9200" autocomplete="off" type="text"><span role="status" aria-live="polite" class="ui-helper-hidden-accessible"></span>
+      </form>
+        <span class="pull-left btn btn-link"><span id="notification" style="visibility: hidden" class="label label-info"></span></span>
+    </div>
+
+  </div>
+</div>
+<div id="main" class="container-fluid">
+  <div id="editor_container" class="ui-resizable" style="top: 51px;">
+    <div id="editor" class=" ace_editor ace-tm" style="font-size: 12px;"></div>
+  </div>
+  <div id="output_container" style="top: 51px;">
+    <div id="output" class=" ace_editor ace-tm ace_focus" style="font-size: 12px;"></div>
+  </div>
+  <ul id="autocomplete" style="left: -1000px;"></ul>
+</div>
+</script>
+</body>
+</html>
