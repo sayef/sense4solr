@@ -1,28 +1,65 @@
 <html xmlns="http://www.w3.org/1999/html" lang="en"><head>
 <meta http-equiv="content-type" content="text/html; charset=windows-1252">
   <title>Marvel - Sense</title>
+  <link rel="stylesheet" href="assets/send.css">
   <link id="bootstrapThemeCss" href="assets/bootstrap.css" type="text/css" rel="stylesheet">
   <link href="assets/font-awesome.css" type="text/css" rel="stylesheet">
   <link id="senseThemeCss" href="assets/sense.css" rel="stylesheet" type="text/css">
   <link href="assets/sense_002.css" rel="stylesheet" type="text/css">
+  <link href="assets/jsoneditor.min.css" rel="stylesheet" type="text/css">
+
+  <script src="assets/ace.js"></script>
+  <script src="assets/jquery.min.js"></script>
+  <script src="assets/jsoneditor.min.js"></script>
 
 
- 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.0/ace.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.js"></script>
   <script type="text/javascript">
   	$(document).ready(function(){
-	  	  var editor = ace.edit("editor");
-			editor.setTheme("ace/theme/monokai");
-			editor.getSession().setMode("ace/mode/javascript");
+
+      $('.zoomBtn').click(function() {
+        $('.zoom-btn-sm').toggleClass('scale-out');
+        if (!$('.zoom-card').hasClass('scale-out')) {
+          $('.zoom-card').toggleClass('scale-out');
+        }
+      });
+
+      const re = /^(POST|GET)/i;
+
+  	  var editor = ace.edit("editor");
+			editor.setTheme("ace/theme/github");
+			editor.getSession().setMode("ace/mode/json");
+      editor.container.style.lineHeight = "20px";
+      editor.renderer.updateFontSize();
 			var Range = require("ace/range").Range, markerId
 			var handler = function(e){
 			    var editor = e.editor
 			    var pos = editor.getCursorPosition()
 			    var token = editor.session.getTokenAt(pos.row, pos.column)
-			    var line = editor.session.getLine(pos.row)   
+          var top = pos.row * 20 
+			    var line = editor.session.getLine(pos.row)
+          if (line && line.match(re) && $('#zoomBtn').length == 0) {
+            $('#editor_actions').css("top", top).css("visibility", "visible");
+          } else {
+            $('#editor_actions').css("visibility", "hidden");
+          }
 			}
 			editor.on("click", handler)
+
+      var container = document.getElementById("output");
+      var options = {mode:"view"};
+      var output = new JSONEditor(container, options);
+
+      // set json
+      var json = {
+          "Array": [1, 2, 3],
+          "Boolean": true,
+          "Null": null,
+          "Number": 123,
+          "Object": {"a": "b", "c": "d"},
+          "String": "Hello World"
+      };
+      output.set(json);
+      editor.setValue(JSON.stringify(json, null, "\t"));
 
 	});
   </script>
@@ -38,12 +75,22 @@
       </form>
         <span class="pull-left btn btn-link"><span id="notification" style="visibility: hidden" class="label label-info"></span></span>
     </div>
-
   </div>
 </div>
 <div id="main" class="container-fluid">
   <div id="editor_container" class="ui-resizable" style="top: 51px;">
     <div id="editor" class=" ace_editor ace-tm" style="font-size: 12px;"></div>
+    <div id="editor_actions" style="visibility: hidden; top: 0px;">
+      <a class="zoom-fab zoom-btn-sm zoomBtn" href="#" data-toggle="tooltip" title="" data-original-title="click to send request">
+        <img src="assets/send.png" style="width: 100%;height: 100%;background-size: cover;">
+      </a>
+      <ul class="zoom-menu">
+        <li>
+          <a class="zoom-fab zoom-btn-sm zoom-btn-person scale-transition scale-out"></a>
+        </li>
+      </ul>
+    </div>
+    <!-- <div class="ui-resizable-handle ui-resizable-e" style="z-index: 1000; vertical-align: middle; line-height: 909px;">︙</div> -->
   </div>
   <div id="output_container" style="top: 51px;">
     <div id="output" class=" ace_editor ace-tm ace_focus" style="font-size: 12px;"></div>
