@@ -1,38 +1,38 @@
 <html xmlns="http://www.w3.org/1999/html" lang="en"><head>
 <meta http-equiv="content-type" content="text/html; charset=windows-1252">
-  <title>Marvel - Sense</title>
-  <link rel="stylesheet" href="assets/send.css" rel="stylesheet">
+  <title>Sense4Solr</title>
+  <link href="assets/send.css" rel="stylesheet" type="text/css">
+  <link href="assets/jquery-ui.min.css" type="text/css" rel="stylesheet">
   <link href="assets/bootstrap.css" type="text/css" rel="stylesheet">
   <link href="assets/font-awesome.css" type="text/css" rel="stylesheet">
   <link href="assets/sense.css" rel="stylesheet" type="text/css">
   <link href="assets/sense_002.css" rel="stylesheet" type="text/css">
   <link href="assets/jsoneditor.min.css" rel="stylesheet" type="text/css">
 
-  <script src="assets/ace.js"></script>
+  <script src="assets/ace/ace.js"></script>
   <script src="assets/jquery.min.js"></script>
+  <script src="assets/jquery-ui.min.js"></script>
   <script src="assets/jsoneditor.min.js"></script>
 
 
   <script type="text/javascript">
   	$(document).ready(function(){
 
-      $('.zoomBtn').click(function() {
-        $('.zoom-btn-sm').toggleClass('scale-out');
-        if (!$('.zoom-card').hasClass('scale-out')) {
-          $('.zoom-card').toggleClass('scale-out');
-        }
-      });
-
+      // supported request types
       const re = /^(POST|GET)/i;
 
+      // define ace editor
   	  var editor = ace.edit("editor");
-			editor.setTheme("ace/theme/github");
+			editor.setTheme("ace/theme/monokai");
 			editor.getSession().setMode("ace/mode/json");
       editor.container.style.lineHeight = "20px";
       editor.renderer.updateFontSize();
+      editor.session.setOption("useWorker", false);
+
 			var Range = require("ace/range").Range, markerId
-			var handler = function(e){
-			    var editor = e.editor
+
+      // define ace editor click/kedown handler
+			var handler = function(editor){
 			    var pos = editor.getCursorPosition()
 			    var token = editor.session.getTokenAt(pos.row, pos.column)
           var top = pos.row * 20 
@@ -43,27 +43,182 @@
             $('#editor_actions').css("visibility", "hidden");
           }
 			}
-			editor.on("click", handler)
 
+      //  define click event
+			editor.on("click", function(e) {
+        var editor = e.editor
+        handler(editor);
+      });
+
+      // define kedown event
+      $(editor.textInput.getElement()).on("keydown", function(e){
+        handler(editor);
+      });
+
+      // define outpur containter
       var container = document.getElementById("output");
-      var options = {mode:"view"};
-      var output = new JSONEditor(container, options);
-
-      // set json
-      var json = {
-          "Array": [1, 2, 3],
-          "Boolean": true,
-          "Null": null,
-          "Number": 123,
-          "Object": {"a": "b", "c": "d"},
-          "String": "Hello World"
+      var options = {
+        mode: 'code',
+        modes: ['code','tree', 'view'],
+        theme: 'ace/theme/monokai'
       };
-      output.set(json);
-      editor.setValue(JSON.stringify(json, null, "\t"));
+      var output = new JSONEditor(container, options, "");
+      output.aceEditor.setReadOnly(true);
 
-	});
+
+      // set a sample input json
+      var json = {
+        "query": "id:en_inappropriate-contents"
+      };
+
+      editor.setValue("POST /tigerit/query\n" + JSON.stringify(json, null, "\t"));
+
+      // json validity checker  
+      function isValidJson(str) {
+          try {
+              JSON.parse(str);
+          } catch (e) {
+              return false;
+          }
+          return true;
+      }
+
+      // define event for clicking run button
+      $('.zoomBtn').click(send());
+
+      // define method for clicking the run button / ctrl+enter
+      function send() {
+        // $('.zoom-btn-sm').toggleClass('scale-out');
+        // if (!$('.zoom-card').hasClass('scale-out')) {
+        //   $('.zoom-card').toggleClass('scale-out');
+        // }
+
+        var pos = editor.getCursorPosition()
+        var token = editor.session.getTokenAt(pos.row, pos.column)
+        var top = pos.row * 20 
+        var line = editor.session.getLine(pos.row)
+
+        var from = pos.row
+        var to = editor.session.getLength()
+        
+        line = line.trim().replace(/\s+/, ' ')
+
+        if (line.split(' ').length == 2) {
+            
+            var request_type = line.split(' ')[0]
+            var url_suffix = line.split(' ')[1]
+            var json = '';
+            var flag = false;
+            for (var i = from+1; i <= to; i++) {
+              json = json + ' ' + editor.session.getLine(i);
+              if (isValidJson(json)) {
+                flag = true;
+                break;
+              }
+            }
+
+            if (flag) {
+              $.ajax({
+                  type: request_type,
+                  contentType: "application/json",
+                  url: $('#es_server').val() + url_suffix,
+                  data: json,
+                  dataType: 'json',
+                  timeout: 100000,
+                  xhrFields: {withCredentials: true},
+                  beforeSend: function (jqXHR, settings) {
+                      console.log(settings.url);
+                  },
+                  success: function (data) {
+                      console.log("SUCCESS: ", data);
+                      output.set(data);
+                  },
+                  error: function (e) {
+                      console.log("ERROR: ", e);
+                      output.set(e);
+                  },
+                  done: function (e) {
+                      console.log("DONE");
+                  }
+            });
+          }
+
+        }
+
+      }
+
+      // add ctrl+enter event which is alternate to click run button
+      editor.commands.addCommand({
+        name: "ctrl-enter",
+        exec: send,
+        bindKey: {mac: "cmd-enter", win: "ctrl-enter"}
+      });
+      
+
+      // $( "#editor_container" ).resizable({
+      //       handles: "e",
+      //       alsoResizeReverse: "#output_container",
+      // });
+
+      $( "#output_container" ).resizable({
+            handles: "w",
+            alsoResizeReverse: "#editor_container"
+      });
+
+  });
+
+$.ui.plugin.add("resizable", "alsoResizeReverse", {
+
+    start: function() {
+        var that = $(this).resizable( "instance" ),
+            o = that.options;
+
+        $(o.alsoResizeReverse).each(function() {
+            var el = $(this);
+            el.data("ui-resizable-alsoresizeReverse", {
+                width: parseInt(el.width(), 10), height: parseInt(el.height(), 10),
+                left: parseInt(el.css("left"), 10), top: parseInt(el.css("top"), 10)
+            });
+        });
+    },
+
+    resize: function(event, ui) {
+        var that = $(this).resizable( "instance" ),
+            o = that.options,
+            os = that.originalSize,
+            op = that.originalPosition,
+            delta = {
+                height: (that.size.height - os.height) || 0,
+                width: (that.size.width - os.width) || 0,
+                top: (that.position.top - op.top) || 0,
+                left: (that.position.left - op.left) || 0
+            };
+
+        $(o.alsoResizeReverse).each(function() {
+            var el = $(this), start = $(this).data("ui-resizable-alsoresize-reverse"), style = {},
+                css = el.parents(ui.originalElement[0]).length ?
+                    [ "width", "height" ] :
+                    [ "width", "height", "top", "left" ];
+
+            $.each(css, function(i, prop) {
+                var sum = (start[prop] || 0) - (delta[prop] || 0);
+                if (sum && sum >= 0) {
+                    style[prop] = sum || null;
+                }
+            });
+
+            el.css(style);
+        });
+    },
+
+    stop: function() {
+        $(this).removeData("resizable-alsoresize-reverse");
+    }
+});
+      
+
   </script>
-  </head>
+</head>
 <body class="">
 <div class="navbar navbar-static-top">
   <div class="navbar-inner">
@@ -71,7 +226,7 @@
       <span class="brand" id="server_label">Server</span>
 
       <form class="navbar-form pull-left">
-        <input id="es_server" class="span5 ui-autocomplete-input" value="localhost:9200" autocomplete="off" type="text"><span role="status" aria-live="polite" class="ui-helper-hidden-accessible"></span>
+        <input id="es_server" class="span5 ui-autocomplete-input" value="http://localhost:8984/solr" autocomplete="off" type="text"><span role="status" aria-live="polite" class="ui-helper-hidden-accessible"></span>
       </form>
         <span class="pull-left btn btn-link"><span id="notification" style="visibility: hidden" class="label label-info"></span></span>
     </div>

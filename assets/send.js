@@ -3,6 +3,9 @@ $('#zoomBtn').click(function() {
   if (!$('.zoom-card').hasClass('scale-out')) {
     $('.zoom-card').toggleClass('scale-out');
   }
+
+   
+
 });
 
 $('.zoom-btn-sm').click(function() {
